@@ -3,7 +3,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace SqlDependencyResolution
 {
-    public class LogicTablePermissionRepository
+    public interface ILogicTablePermissionRepository
+    {
+        IQueryable<LogicTablePermission> GetLogicTablePermissions();
+    }
+
+    public class LogicTablePermissionRepository : ILogicTablePermissionRepository
     {
         private readonly ApplicationContext dbContext;
 

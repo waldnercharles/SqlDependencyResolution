@@ -1,5 +1,4 @@
-﻿using System.Linq;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -8,12 +7,12 @@ namespace SqlDependencyResolution
     [TestClass]
     public class LogicTablePermissionsRepositoryTests : TestBase
     {
-        private LogicTablePermissionRepository target;
+        private ILogicTablePermissionRepository target;
 
         [TestInitialize]
         public void TestInitialize()
         {
-            this.target = this.GetService<LogicTablePermissionRepository>();
+            this.target = this.GetService<ILogicTablePermissionRepository>();
         }
 
         [TestMethod]

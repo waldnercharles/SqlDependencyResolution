@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using System;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace SqlDependencyResolution
@@ -15,6 +17,16 @@ namespace SqlDependencyResolution
                 this.serviceProvider.Dispose();
                 this.serviceProvider = null;
             }
+        }
+
+        protected void ConfigureServices(Action<IServiceCollection, IConfiguration> setup)
+        {
+            if (this.serviceProvider != null)
+            {
+                throw new ApplicationException("Unable to configure services. The service provider has already been initialized.");
+            }
+
+            this.serviceProvider = Startup.CreateServiceProvider(setup);
         }
 
         protected T GetService<T>()

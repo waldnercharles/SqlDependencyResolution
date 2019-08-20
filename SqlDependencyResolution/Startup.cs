@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -7,7 +8,7 @@ namespace SqlDependencyResolution
 {
     public static class Startup
     {
-        public static ServiceProvider CreateServiceProvider()
+        public static ServiceProvider CreateServiceProvider(Action<IServiceCollection, IConfiguration> setup = null)
         {
             var configuration = new ConfigurationBuilder()
                 .AddJsonFile($"appsettings.json", true, true)
@@ -21,6 +22,8 @@ namespace SqlDependencyResolution
                     .AddDebug());
 
             ConfigureServices(services, configuration);
+            setup?.Invoke(services, configuration);
+
             return services.BuildServiceProvider();
         }
 
@@ -38,7 +41,7 @@ namespace SqlDependencyResolution
                 }
             });
 
-            services.AddScoped<LogicTablePermissionRepository>();
+            services.AddScoped<ILogicTablePermissionRepository, LogicTablePermissionRepository>();
         }
     }
 }
