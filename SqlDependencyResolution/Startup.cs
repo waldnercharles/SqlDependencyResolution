@@ -26,7 +26,19 @@ namespace SqlDependencyResolution
 
         public static void ConfigureServices(IServiceCollection services, IConfiguration configuration)
         {
-            services.AddDbContext<ApplicationContext>(options => options.UseSqlServer(configuration["ConnectionStrings:DefaultConnection"]));
+            services.AddDbContext<ApplicationContext>(options => {
+                var connectionString = configuration["ConnectionStrings:DefaultConnection"];
+                if (connectionString.Contains("EFProviders.InMemory"))
+                {
+                    options.UseInMemoryDatabase("Test");
+                }
+                else
+                {
+                    options.UseSqlServer(connectionString);
+                }
+            });
+
+            services.AddScoped<LogicTablePermissionRepository>();
         }
     }
 }
