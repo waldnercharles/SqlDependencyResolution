@@ -6,6 +6,11 @@ namespace SqlDependencyResolution
     {
         static void Main(string[] args)
         {
+            using (var serviceProvider = Startup.CreateServiceProvider())
+            {
+
+            }
+
             Console.WriteLine("Hello World!");
         }
     }
