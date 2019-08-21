@@ -42,6 +42,7 @@ namespace SqlDependencyResolution
             });
 
             services.AddScoped<ILogicTablePermissionRepository, LogicTablePermissionRepository>();
+            services.AddScoped<IDependencyService, DependencyService>();
         }
     }
 }

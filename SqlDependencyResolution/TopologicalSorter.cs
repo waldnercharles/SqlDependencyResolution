@@ -2,69 +2,102 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
+using System.Threading.Tasks;
 
 namespace SqlDependencyResolution
 {
-    public class TopologicalSorter<T> where T : IEquatable<T>
+    public class TopologicalSorter
     {
+        private static readonly ReferenceEqualityComparer<Action> actionComparer = new ReferenceEqualityComparer<Action>();
+        private static readonly ReferenceEqualityComparer<Task> taskComparer = new ReferenceEqualityComparer<Task>();
+
         private class NodeRelationship
         {
-            public readonly HashSet<T> Dependents = new HashSet<T>();
-            public int DependenciesCount;
+            public HashSet<Action> Dependents = new HashSet<Action>(actionComparer);
+            public HashSet<Action> Dependencies = new HashSet<Action>(actionComparer);
         }
 
-        private Dictionary<T, NodeRelationship> nodes = new Dictionary<T, NodeRelationship>();
+        private class TaskRelationship
+        {
+            public Task Task;
+            public HashSet<Task> TaskDependencies = new HashSet<Task>(taskComparer);
+        }
 
-        public void Add(T nodeId)
+        private readonly Dictionary<Action, NodeRelationship> nodes = new Dictionary<Action, NodeRelationship>(actionComparer);
+
+        public void Add(Action nodeId)
         {
             this.nodes.TryAdd(nodeId, new NodeRelationship());
         }
 
-        public void Add(T nodeId, T dependencyId)
+        public void Add(Action nodeId, Action dependencyId)
         {
-            Debug.Assert(!nodeId.Equals(dependencyId));
+            Debug.Assert(!ReferenceEquals(nodeId, dependencyId));
 
             this.Add(nodeId);
-            this.nodes[nodeId].DependenciesCount += 1;
+            this.nodes[nodeId].Dependencies.Add(dependencyId);
 
             this.Add(dependencyId);
             this.nodes[dependencyId].Dependents.Add(nodeId);
         }
 
-        //public void Add(T node, IEnumerable<T> dependencies)
-        //{
-
-        //    foreach (var dependency in dependencies)
-        //    {
-        //        this.Add(node, dependency);
-        //    }
-        //}
-
-        public IEnumerable<T> Sort()
+        public void Add(Action nodeId, IEnumerable<Action> dependencyIds)
         {
-            var nodes = this.nodes.ToDictionary(kvp => kvp.Key, kvp =>  kvp.Value);
-            var sortedNodeIds = new List<T>();
+            foreach (Action dependencyId in dependencyIds)
+            {
+                this.Add(nodeId, dependencyId);
+            }
+        }
+
+        public Task Sort()
+        {
+            var nodes = this.nodes.ToDictionary
+            (
+                kvp => kvp.Key,
+                kvp =>  new NodeRelationship { Dependencies = kvp.Value.Dependencies.ToHashSet(actionComparer), Dependents = kvp.Value.Dependents.ToHashSet(actionComparer) },
+                actionComparer
+            );
+
+            var taskDictionary = this.nodes.ToDictionary
+            (
+                kvp => kvp.Key,
+                kvp => new TaskRelationship(),
+                actionComparer
+            );
+
+            var sortedNodeIds = new List<Action>();
 
             // Add root nodes
-            sortedNodeIds.AddRange(this.nodes.Where(kvp => kvp.Value.DependenciesCount == 0).Select(kvp => kvp.Key));
+            sortedNodeIds.AddRange(this.nodes.Where(kvp => kvp.Value.Dependencies.Count == 0).Select(kvp => kvp.Key));
+            //foreach (Action nodeId in sortedNodeIds)
+            //{
+            //    var task = new Task(nodeId);
+            //    taskDictionary[nodeId].Task = task;
+            //}
 
-            foreach (var nodeId in sortedNodeIds)
+            for (var index = 0; index < sortedNodeIds.Count; ++index)
             {
-                var dependentIds = nodes[nodeId].Dependents;
-                foreach (var dependentId in dependentIds)
-                {
-                    Debug.Assert(nodes[dependentId].DependenciesCount > 0);
+                Action nodeId = sortedNodeIds[index];
+                Task task = Task.WhenAll(taskDictionary[nodeId].TaskDependencies).ContinueWith((Task t) => { nodeId.Invoke(); });
 
-                    nodes[dependentId].DependenciesCount -= 1;
-                    if (nodes[dependentId].DependenciesCount == 0)
+                taskDictionary[nodeId].Task = task;
+
+                HashSet<Action> dependentIds = nodes[nodeId].Dependents;
+                foreach (Action dependentId in dependentIds)
+                {
+                    NodeRelationship dependent = nodes[dependentId];
+
+                    taskDictionary[dependentId].TaskDependencies.Add(task);
+
+                    dependent.Dependencies.Remove(sortedNodeIds[index]);
+                    if (dependent.Dependencies.Count == 0)
                     {
                         sortedNodeIds.Add(dependentId);
                     }
                 }
             }
 
-            return sortedNodeIds;
+            return Task.WhenAll(taskDictionary.Values.Select(x => x.Task));
         }
     }
 }

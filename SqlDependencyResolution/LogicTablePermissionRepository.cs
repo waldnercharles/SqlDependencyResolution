@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using Microsoft.EntityFrameworkCore;
 
 namespace SqlDependencyResolution
@@ -19,7 +20,27 @@ namespace SqlDependencyResolution
 
         public IQueryable<LogicTablePermission> GetLogicTablePermissions()
         {
-            return this.dbContext.LogicTablePermissions.FromSql("SELECT * FROM (VALUES('CL01','Table',0),('CL01','OtherTable',1),('CL01','AnotherTable',2),('CL01','AndAnotherTable',3)) AS ltp(LogicNK,TableNM,Permissions)");
+            return this.dbContext.LogicTablePermissions.FromSql
+            (
+                "SELECT * FROM" + Environment.NewLine + 
+                "(" + Environment.NewLine + 
+                "   VALUES" + Environment.NewLine + 
+                    string.Join
+                    (
+                        "," + Environment.NewLine,
+                        new[]
+                        {
+                            "   ('CL1','Table A', 3)",
+                            "   ('CL1','Table B', 2)",
+                            "   ('CL2','Table A', 2)",
+                            "   ('CL3','Table B', 3)",
+                            "   ('CL4','Table B', 2)",
+                            "   ('CL5','Table C', 2)",
+                            "   ('CL6','Table C', 3)"
+                        }
+                    ) + Environment.NewLine + 
+                ") AS ltp(LogicNK,TableNM,Permissions)"
+            );
         }
     }
 }
