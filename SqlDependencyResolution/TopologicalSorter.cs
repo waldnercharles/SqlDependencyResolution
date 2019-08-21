@@ -6,15 +6,21 @@ using System.Threading.Tasks;
 
 namespace SqlDependencyResolution
 {
+    public class Node
+    {
+        public string Name { get; set; }
+        public Action Action { get; set; }
+    }
+
     public class TopologicalSorter
     {
-        private static readonly ReferenceEqualityComparer<Action> actionComparer = new ReferenceEqualityComparer<Action>();
+        private static readonly ReferenceEqualityComparer<Node> actionComparer = new ReferenceEqualityComparer<Node>();
         private static readonly ReferenceEqualityComparer<Task> taskComparer = new ReferenceEqualityComparer<Task>();
 
         private class NodeRelationship
         {
-            public HashSet<Action> Dependents = new HashSet<Action>(actionComparer);
-            public HashSet<Action> Dependencies = new HashSet<Action>(actionComparer);
+            public HashSet<Node> Dependents = new HashSet<Node>(actionComparer);
+            public HashSet<Node> Dependencies = new HashSet<Node>(actionComparer);
         }
 
         private class TaskRelationship
@@ -23,14 +29,14 @@ namespace SqlDependencyResolution
             public HashSet<Task> TaskDependencies = new HashSet<Task>(taskComparer);
         }
 
-        private readonly Dictionary<Action, NodeRelationship> nodes = new Dictionary<Action, NodeRelationship>(actionComparer);
+        private readonly Dictionary<Node, NodeRelationship> nodes = new Dictionary<Node, NodeRelationship>(actionComparer);
 
-        public void Add(Action nodeId)
+        public void Add(Node nodeId)
         {
             this.nodes.TryAdd(nodeId, new NodeRelationship());
         }
 
-        public void Add(Action nodeId, Action dependencyId)
+        public void Add(Node nodeId, Node dependencyId)
         {
             Debug.Assert(!ReferenceEquals(nodeId, dependencyId));
 
@@ -41,9 +47,9 @@ namespace SqlDependencyResolution
             this.nodes[dependencyId].Dependents.Add(nodeId);
         }
 
-        public void Add(Action nodeId, IEnumerable<Action> dependencyIds)
+        public void Add(Node nodeId, IEnumerable<Node> dependencyIds)
         {
-            foreach (Action dependencyId in dependencyIds)
+            foreach (Node dependencyId in dependencyIds)
             {
                 this.Add(nodeId, dependencyId);
             }
@@ -65,25 +71,30 @@ namespace SqlDependencyResolution
                 actionComparer
             );
 
-            var sortedNodeIds = new List<Action>();
+            var sortedNodeIds = new List<Node>();
 
             // Add root nodes
             sortedNodeIds.AddRange(this.nodes.Where(kvp => kvp.Value.Dependencies.Count == 0).Select(kvp => kvp.Key));
-            //foreach (Action nodeId in sortedNodeIds)
-            //{
-            //    var task = new Task(nodeId);
-            //    taskDictionary[nodeId].Task = task;
-            //}
+
+            var rootTasks = new List<Task>();
+
+            foreach (Node nodeId in sortedNodeIds)
+            {
+                var task = new Task(nodeId.Action);
+                taskDictionary[nodeId].Task = task;
+
+                rootTasks.Add(task);
+            }
 
             for (var index = 0; index < sortedNodeIds.Count; ++index)
             {
-                Action nodeId = sortedNodeIds[index];
-                Task task = Task.WhenAll(taskDictionary[nodeId].TaskDependencies).ContinueWith((Task t) => { nodeId.Invoke(); });
+                Node nodeId = sortedNodeIds[index];
+                Task task = taskDictionary[nodeId].Task ?? Task.WhenAll(taskDictionary[nodeId].TaskDependencies).ContinueWith((Task t) => { nodeId.Action.Invoke(); });
 
                 taskDictionary[nodeId].Task = task;
 
-                HashSet<Action> dependentIds = nodes[nodeId].Dependents;
-                foreach (Action dependentId in dependentIds)
+                HashSet<Node> dependentIds = nodes[nodeId].Dependents;
+                foreach (Node dependentId in dependentIds)
                 {
                     NodeRelationship dependent = nodes[dependentId];
 
@@ -95,9 +106,24 @@ namespace SqlDependencyResolution
                         sortedNodeIds.Add(dependentId);
                     }
                 }
+
             }
 
-            return Task.WhenAll(taskDictionary.Values.Select(x => x.Task));
+            var cycledNodes = nodes.Where(kvp => kvp.Value.Dependencies.Count != 0).ToArray();
+            if (cycledNodes.Length > 0)
+            {
+                return Task.Run(() => Console.WriteLine("Failed to run. Cycle detected with the following nodes (" + string.Join(", ", cycledNodes.Select(kvp => kvp.Key.Name)) + ")"));
+            }
+            else
+            {
+                foreach (Task task in rootTasks)
+                {
+                    task.Start();
+                }
+
+                return Task.WhenAll(taskDictionary.Values.Select(x => x.Task)).ContinueWith((Task t) => Console.WriteLine("Complete!"));
+            }
+
         }
     }
 }

@@ -24,7 +24,7 @@ namespace SqlDependencyResolution
 
                     Console.WriteLine();
 
-                    var logicActionDictionary = logicRelationships.Select
+                    var nodeDictionary = logicRelationships.Select
                     (
                         l => KeyValuePair.Create<string, Action>
                         (
@@ -57,18 +57,16 @@ namespace SqlDependencyResolution
 
                             }
                         )
-                    ).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+                    ).ToDictionary(kvp => kvp.Key, kvp => new Node() { Name = kvp.Key, Action = kvp.Value });
 
                     var sorter = new TopologicalSorter();
 
                     foreach (LogicRelationship logic in logicRelationships)
                     {
-                        sorter.Add(logicActionDictionary[logic.LogicNaturalKey], logic.LogicNaturalKeyDependencies.Select(dependency => logicActionDictionary[dependency]));
+                        sorter.Add(nodeDictionary[logic.LogicNaturalKey], logic.LogicNaturalKeyDependencies.Select(dependency => nodeDictionary[dependency]));
                     }
 
                     await sorter.Sort();
-
-                    Console.WriteLine("Complete");
                 }
             }).Wait();
 

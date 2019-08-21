@@ -36,7 +36,9 @@ namespace SqlDependencyResolution
                             "   ('CL3','Table B', 3)",
                             "   ('CL4','Table B', 2)",
                             "   ('CL5','Table C', 2)",
-                            "   ('CL6','Table C', 3)"
+                            "   ('CL6','Table C', 3)",
+                          "   ('CL3','Table A', 2)", // This line creates a cycle between CL1 and CL3.
+                                                       // CL3 needs to read from B after CL1 writes to it, and CL1 needs to read from A after CL3 writes to it.
                         }
                     ) + Environment.NewLine + 
                 ") AS ltp(LogicNK,TableNM,Permissions)"
