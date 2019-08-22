@@ -47,11 +47,18 @@ namespace SqlDependencyResolution
             this.nodes[dependencyId].Dependents.Add(nodeId);
         }
 
-        public void Add(Node nodeId, IEnumerable<Node> dependencyIds)
+        public void Add(Node nodeId, Node[] dependencyIds)
         {
-            foreach (Node dependencyId in dependencyIds)
+            if (dependencyIds.Length == 0)
             {
-                this.Add(nodeId, dependencyId);
+                this.Add(nodeId);
+            }
+            else
+            {
+                foreach (Node dependencyId in dependencyIds)
+                {
+                    this.Add(nodeId, dependencyId);
+                }
             }
         }
 

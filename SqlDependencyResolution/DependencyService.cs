@@ -34,18 +34,32 @@ namespace SqlDependencyResolution
             var groupedLogicTablePermissions =
                 logicTablePermissions
                     .Distinct()
-                    .GroupBy(l => l.LogicNaturalKey, l => new { l.TableName, l.Permissions })
-                    .Select(grp => new { LogicNaturalKey = grp.Key, Tables = grp.Select(t => new { t.TableName, t.Permissions }) });
+                    .GroupBy(l => l.LogicNaturalKey, l => new { l.TableName, l.ColumnName, l.Permissions })
+                    .Select(grp => new
+                    {
+                        LogicNaturalKey = grp.Key,
+                        Tables = grp.GroupBy(g => g.TableName, g => new { g.ColumnName, g.Permissions })
+                                    .Select(t => new
+                                    {
+                                        TableName = t.Key,
+                                        Columns = t.Select(c => new { c.ColumnName, c.Permissions }).ToArray()
+                                    })
+                    });
 
             foreach (var currentLogic in groupedLogicTablePermissions)
             {
                 // Find logics writing to tables that the currentLogic is reading from
-                var currentLogicTablesBeingReadFrom = currentLogic.Tables.Where(t => (t.Permissions & PermissionsType.Read) != 0).Select(t => t.TableName).ToArray();
+                var currentLogicColumnsBeingReadFrom =
+                    currentLogic.Tables.SelectMany(t => t.Columns.Where(c => (c.Permissions & PermissionsType.Read) != 0).Select(c => $"{t.TableName}.{c.ColumnName}")).ToArray();
 
                 var currentLogicDependencies =
                     groupedLogicTablePermissions
                         .Where(l => l.LogicNaturalKey != currentLogic.LogicNaturalKey)
-                        .Where(l => l.Tables.Where(t => (t.Permissions & PermissionsType.Write) != 0).Select(t => t.TableName).Intersect(currentLogicTablesBeingReadFrom).Any())
+                        .Where
+                        (l => 
+                            l.Tables.SelectMany(t => t.Columns.Where(c => !string.IsNullOrWhiteSpace(c.ColumnName) && ((c.Permissions & PermissionsType.Write) != 0)).Select(c => $"{t.TableName}.{c.ColumnName}")).Intersect(currentLogicColumnsBeingReadFrom).Any() ||
+                            l.Tables.Where(t => t.Columns.Any(c => string.IsNullOrWhiteSpace(c.ColumnName) && ((c.Permissions & PermissionsType.Write) != 0))).Any(t => currentLogicColumnsBeingReadFrom.Any(r => r.StartsWith(t.TableName)))
+                        )
                         .Select(l => l.LogicNaturalKey);
 
 

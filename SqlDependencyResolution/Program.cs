@@ -42,7 +42,8 @@ namespace SqlDependencyResolution
                                     Console.Write("\r\n");
                                 }
 
-                                Thread.Sleep((rand.Next() % 2500) + 2500);
+                                //Thread.Sleep((rand.Next() % 2500) + 2500);
+                                Thread.Sleep(10000);
 
                                 int tempRow, tempColumn;
                                 lock (writeLock)
@@ -63,7 +64,7 @@ namespace SqlDependencyResolution
 
                     foreach (LogicRelationship logic in logicRelationships)
                     {
-                        sorter.Add(nodeDictionary[logic.LogicNaturalKey], logic.LogicNaturalKeyDependencies.Select(dependency => nodeDictionary[dependency]));
+                        sorter.Add(nodeDictionary[logic.LogicNaturalKey], logic.LogicNaturalKeyDependencies.Select(dependency => nodeDictionary[dependency]).ToArray());
                     }
 
                     await sorter.Sort();

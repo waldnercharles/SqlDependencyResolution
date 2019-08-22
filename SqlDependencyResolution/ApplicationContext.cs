@@ -14,7 +14,7 @@ namespace SqlDependencyResolution
             base.OnModelCreating(modelBuilder);
 
             modelBuilder.Entity<LogicTablePermission>()
-                .HasKey(nameof(LogicTablePermission.LogicNaturalKey), nameof(LogicTablePermission.TableName));
+                .HasKey(nameof(LogicTablePermission.LogicNaturalKey), nameof(LogicTablePermission.TableName), nameof(LogicTablePermission.ColumnName));
 
             modelBuilder.Entity<LogicTablePermission>()
                 .Property(nameof(LogicTablePermission.LogicNaturalKey))
@@ -25,8 +25,12 @@ namespace SqlDependencyResolution
                 .HasColumnName("TableNM");
 
             modelBuilder.Entity<LogicTablePermission>()
+                .Property(nameof(LogicTablePermission.ColumnName))
+                .HasColumnName("ColumnNM");
+
+            modelBuilder.Entity<LogicTablePermission>()
                 .Property(nameof(LogicTablePermission.Permissions))
-                .HasColumnName("Permissions");
+                .HasColumnName("PermissionFLG");
         }
     }
 }

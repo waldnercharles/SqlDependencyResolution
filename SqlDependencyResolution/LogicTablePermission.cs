@@ -14,6 +14,7 @@ namespace SqlDependencyResolution
     {
         public string LogicNaturalKey { get; set; }
         public string TableName { get; set; }
+        public string ColumnName { get; set; }
         public PermissionsType Permissions { get; set; }
     }
 }
