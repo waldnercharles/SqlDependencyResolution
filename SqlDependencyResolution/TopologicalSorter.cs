@@ -62,6 +62,54 @@ namespace SqlDependencyResolution
             }
         }
 
+        public void Print()
+        {
+
+            var rootNodes = this.nodes.Where(kvp => kvp.Value.Dependencies.Count == 0);
+
+            foreach (var node in rootNodes)
+            {
+                this.PrintNode(node, "");
+            }
+        }
+
+        private void PrintNode(KeyValuePair<Node, NodeRelationship> node, string indent)
+        {
+            Console.WriteLine(node.Key.Name);
+
+            var i = 0;
+            foreach (Node dependentId in node.Value.Dependents)
+            {
+                var dependent = KeyValuePair.Create(dependentId, this.nodes[dependentId]);
+                var isLast = (i++ == (node.Value.Dependents.Count - 1));
+
+                this.PrintChildNode(dependent, indent, isLast);
+            }
+        }
+
+        private void PrintChildNode(KeyValuePair<Node, NodeRelationship> node, string indent, bool isLast)
+        {
+            const string cross = " ├─";
+            const string corner = " └─";
+            const string vertical = " │ ";
+            const string space = "   ";
+
+            Console.Write(indent);
+
+            if (isLast)
+            {
+                Console.Write(corner);
+                indent += space;
+            }
+            else
+            {
+                Console.Write(cross);
+                indent += vertical;
+            }
+
+            this.PrintNode(node, indent);
+        }
+
         public Task Sort()
         {
             var nodes = this.nodes.ToDictionary
@@ -128,7 +176,7 @@ namespace SqlDependencyResolution
                     task.Start();
                 }
 
-                return Task.WhenAll(taskDictionary.Values.Select(x => x.Task)).ContinueWith((Task t) => Console.WriteLine("Complete!"));
+                return Task.WhenAll(taskDictionary.Values.Select(x => x.Task)).ContinueWith((Task t) => Console.WriteLine(""));
             }
 
         }
