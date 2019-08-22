@@ -17,9 +17,7 @@ namespace SqlDependencyResolution
 
             var services = new ServiceCollection()
                 .AddLogging(options => options
-                    .AddConfiguration(configuration)
-                    .AddConsole()
-                    .AddDebug());
+                    .AddConfiguration(configuration));
 
             ConfigureServices(services, configuration);
             setup?.Invoke(services, configuration);
