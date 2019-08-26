@@ -72,67 +72,36 @@ namespace SqlDependencyResolution
                     var rand = new Random();
 
                     string line = Console.ReadLine().Replace(" ", "").ToLowerInvariant();
-                    char keyPressed = line.FirstOrDefault();
-
                     bool shouldGraph = false;
 
                     Action sleep;
 
-                    if (line.Length > 1)
+                    switch (line)
                     {
-                        if (line == "gogogadgetbatch")
-                        {
+                        case "b":
+                        case "gogogadgetbatch":
                             sleep = () => Thread.Sleep(5000);
-                        }
-                        else if (line == "gogogadgetrandom")
-                        {
+                            break;
+                        case "r":
+                        case "gogogadgetrandom":
                             sleep = () => Thread.Sleep(rand.Next() % 4000 + 1000);
-                        }
-                        else if (line == "gogogadgetgraph")
-                        {
+                            break;
+                        case "g":
+                        case "gogogadgetgraph":
                             sleep = () => { };
                             shouldGraph = true;
-                        }
-                        else if (line == "gogogadgetskishoes")
-                        {
+                            break;
+                        case "q":
+                        case "gogogadgetskishoes":
                             loop = false;
                             continue;
-                        }
-                        else if (line == "help")
-                        {
+                        case "h":
+                        case "help":
                             Help();
                             continue;
-                        }
-                        else
-                        {
+                        default:
                             Console.WriteLine("Invalid command. Type 'help' to see available commands.");
                             continue;
-                        }
-                    }
-                    else
-                    {
-                        switch (keyPressed)
-                        {
-                            case 'b':
-                                sleep = () => Thread.Sleep(5000);
-                                break;
-                            case 'r':
-                                sleep = () => Thread.Sleep(rand.Next() % 4000 + 1000);
-                                break;
-                            case 'g':
-                                sleep = () => { };
-                                shouldGraph = true;
-                                break;
-                            case 'q':
-                                loop = false;
-                                continue;
-                            case 'h':
-                                Help();
-                                continue;
-                            default:
-                                Console.WriteLine("Invalid command. Type 'help' to see available commands.");
-                                continue;
-                        }
                     }
 
                     var stopwatch = new Stopwatch();
